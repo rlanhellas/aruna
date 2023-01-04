@@ -15,22 +15,22 @@ func SetLogger(l *zap.SugaredLogger) {
 
 // Info log info level
 func Info(ctx context.Context, msg string, args ...interface{}) {
-	enrichedLogger(ctx).Infof(msg, args)
+	enrichedLogger(ctx).Infof(msg, args...)
 }
 
 // Debug log debug level
 func Debug(ctx context.Context, msg string, args ...interface{}) {
-	enrichedLogger(ctx).Debugf(msg, args)
+	enrichedLogger(ctx).Debugf(msg, args...)
 }
 
 // Warn log warn level
 func Warn(ctx context.Context, msg string, args ...interface{}) {
-	enrichedLogger(ctx).Warnf(msg, args)
+	enrichedLogger(ctx).Warnf(msg, args...)
 }
 
 // Error log error level
 func Error(ctx context.Context, msg string, args ...interface{}) {
-	enrichedLogger(ctx).Errorf(msg, args)
+	enrichedLogger(ctx).Errorf(msg, args...)
 }
 
 func enrichedLogger(ctx context.Context) *zap.SugaredLogger {
