@@ -6,8 +6,8 @@ import (
 )
 
 // HttpServerPort return http server port
-func HttpServerPort() uint8 {
-	return uint8(viper.GetUint(global.HttpServerPort))
+func HttpServerPort() int {
+	return viper.GetInt(global.HttpServerPort)
 }
 
 // HttpServerEnabled return whether http server is enabled

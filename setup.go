@@ -82,7 +82,7 @@ func setupHttpServer(routes []*httpbridge.RouteHttp, ctx context.Context) {
 		})
 	}
 
-	err := r.Run("0.0.0.0:" + strconv.Itoa(int(config.HttpServerPort())))
+	err := r.Run("0.0.0.0:" + strconv.Itoa(config.HttpServerPort()))
 	if err != nil {
 		panic(err)
 	}
