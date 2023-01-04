@@ -5,7 +5,7 @@ import "context"
 // RouteHttp configure a http route
 type RouteHttp struct {
 	Path         string
-	Handler      func(in any, ctx context.Context) HandlerHttpResponse
+	Handler      func(in any, ctx context.Context) *HandlerHttpResponse
 	HandlerInput any //data sent from http request will be unmarshal to this input
 	Method       string
 }

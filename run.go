@@ -14,6 +14,7 @@ type RunRequest struct {
 // Run Starts the application
 func Run(req *RunRequest) {
 	ctx := context.Background()
+	setupConfig()
 	setupLogger()
 
 	//go setupMetrics()

@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"strconv"
+	"strings"
 )
 
 func setupLogger() {
@@ -54,7 +55,22 @@ func setupLogger() {
 	logger.SetLogger(l.With(zap.String("app", viper.GetString(global.AppName)),
 		zap.String("version", viper.GetString(global.AppVer))).Sugar())
 }
+func setupConfig() {
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("../")
+	viper.AddConfigPath("../../")
+	viper.AddConfigPath("../../../")
 
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+}
 func setupMetrics() {}
 func setupHttpServer(routes []*httpbridge.RouteHttp, ctx context.Context) {
 	r := gin.Default()
