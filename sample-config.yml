@@ -1,0 +1,9 @@
+app:
+  name: test
+  version: v0.0.1
+logger:
+  level: debug
+  encoding: console #console or json
+http:
+  enabled: true
+  port: 8080
