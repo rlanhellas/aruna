@@ -1,11 +1,14 @@
 package httpbridge
 
-import "context"
+import (
+	"context"
+	"github.com/gin-gonic/gin"
+)
 
 // RouteHttp configure a http route
 type RouteHttp struct {
 	Path         string
-	Handler      func(in any, ctx context.Context) *HandlerHttpResponse
+	Handler      func(ctx context.Context, in any, params gin.Params) *HandlerHttpResponse
 	HandlerInput any //data sent from http request will be unmarshal to this input
 	Method       string
 }

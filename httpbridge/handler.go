@@ -23,7 +23,7 @@ func HttpHandler(ginctx *gin.Context, ctx context.Context, routeHttp *RouteHttp)
 		return
 	}
 
-	handlerResponse := routeHttp.Handler(routeHttp.HandlerInput, newCtx)
+	handlerResponse := routeHttp.Handler(newCtx, routeHttp.HandlerInput, ginctx.Params)
 	logger.Debug(newCtx, "handler response status code %d. error: %v", handlerResponse.StatusCode, handlerResponse.Error)
 	ginctx.JSON(handlerResponse.StatusCode, BaseHttpResponse{
 		ErrorMessage: handlerResponse.Error.Error(),
