@@ -1,11 +1,17 @@
 package global
 
 const (
-	AppName           = "app.name"
-	AppVer            = "app.version"
-	LoggerLevel       = "logger.level"
-	LoggerEncoding    = "logger.encoding"
-	HttpServerPort    = "http.port"
-	HttpServerEnabled = "http.enabled"
-	CorrelationID     = "correlationid"
+	AppName            = "app.name"
+	AppVer             = "app.version"
+	LoggerLevel        = "logger.level"
+	LoggerEncoding     = "logger.encoding"
+	HttpServerPort     = "http.port"
+	HttpServerEnabled  = "http.enabled"
+	DbEnabled          = "db.enabled"
+	DbType             = "db.type"
+	DbConnectionString = "db.connectionstring"
+	DbShowSQL          = "db.showsql"
+	CorrelationID      = "correlationid"
+
+	PostgresDBType = "postgres"
 )

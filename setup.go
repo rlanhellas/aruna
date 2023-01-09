@@ -2,14 +2,21 @@ package aruna
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/rlanhellas/aruna/config"
+	"github.com/rlanhellas/aruna/db"
 	"github.com/rlanhellas/aruna/global"
 	"github.com/rlanhellas/aruna/httpbridge"
 	"github.com/rlanhellas/aruna/logger"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	loggergorm "gorm.io/gorm/logger"
+	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -17,7 +24,7 @@ import (
 func setupLogger() {
 	var l *zap.Logger
 	var err error
-	level, err := zap.ParseAtomicLevel(viper.GetString(global.LoggerLevel))
+	level, err := zap.ParseAtomicLevel(config.LoggerLevel())
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +36,7 @@ func setupLogger() {
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding: viper.GetString(global.LoggerEncoding),
+		Encoding: config.LoggerEncoding(),
 		EncoderConfig: zapcore.EncoderConfig{
 			TimeKey:        "ts",
 			LevelKey:       "level",
@@ -52,8 +59,8 @@ func setupLogger() {
 		panic(err)
 	}
 
-	logger.SetLogger(l.With(zap.String("app", viper.GetString(global.AppName)),
-		zap.String("version", viper.GetString(global.AppVer))).Sugar())
+	logger.SetLogger(l.With(zap.String("app", config.AppName()),
+		zap.String("version", config.AppVer())).Sugar())
 }
 func setupConfig() {
 	viper.SetConfigName("config")
@@ -76,9 +83,15 @@ func setupHttpServer(routes []*httpbridge.RouteHttp, ctx context.Context) {
 	r := gin.Default()
 
 	//process routes
+	mapRoutes := make(map[string]*httpbridge.RouteHttp, len(routes))
 	for _, route := range routes {
+		mapRoutes[fmt.Sprintf("%s@%s", route.Path, route.Method)] = route
 		r.Handle(route.Method, route.Path, func(ginctx *gin.Context) {
-			httpbridge.HttpHandler(ginctx, ctx, route)
+			if innerRoute, ok := mapRoutes[fmt.Sprintf("%s@%s", ginctx.FullPath(), ginctx.Request.Method)]; ok {
+				httpbridge.HttpHandler(ginctx, ctx, innerRoute)
+			} else {
+				ginctx.JSON(http.StatusInternalServerError, "Route not mapped")
+			}
 		})
 	}
 
@@ -87,4 +100,36 @@ func setupHttpServer(routes []*httpbridge.RouteHttp, ctx context.Context) {
 		panic(err)
 	}
 }
+func setupDB(ctx context.Context, migrateTables []any) {
+
+	gormLogLevel := loggergorm.Default.LogMode(loggergorm.Silent)
+	if config.DbShowSQL() {
+		gormLogLevel = loggergorm.Default.LogMode(loggergorm.Info)
+	}
+
+	switch config.DbType() {
+	case global.PostgresDBType:
+		clientdb, err := gorm.Open(postgres.Open(config.DbConnectionString()), &gorm.Config{
+			Logger: gormLogLevel,
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		if migrateTables != nil {
+			for _, mt := range migrateTables {
+				logger.Debug(ctx, "migrating table %s", reflect.TypeOf(mt).String())
+				err := clientdb.AutoMigrate(mt)
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
+
+		db.SetClient(clientdb)
+	default:
+		panic(fmt.Sprintf("unsupported db type %s", config.DbType()))
+	}
+}
+
 func setupAuthZAuthN() {}

@@ -8,7 +8,8 @@ import (
 
 // RunRequest contains all configuration to run your app
 type RunRequest struct {
-	RoutesHttp []*httpbridge.RouteHttp
+	RoutesHttp    []*httpbridge.RouteHttp
+	MigrateTables []any
 }
 
 // Run Starts the application
@@ -21,6 +22,10 @@ func Run(req *RunRequest) {
 
 	if config.HttpServerEnabled() {
 		go setupHttpServer(req.RoutesHttp, ctx)
+	}
+
+	if config.DbEnabled() {
+		setupDB(ctx, req.MigrateTables)
 	}
 
 	//setupAuthZAuthN()

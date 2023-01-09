@@ -15,6 +15,46 @@ func HttpServerEnabled() bool {
 	return viper.GetBool(global.HttpServerEnabled)
 }
 
+// LoggerLevel return logger level
+func LoggerLevel() string {
+	return viper.GetString(global.LoggerLevel)
+}
+
+// LoggerEncoding return logger encoding (console or json)
+func LoggerEncoding() string {
+	return viper.GetString(global.LoggerEncoding)
+}
+
+// AppName return application name
+func AppName() string {
+	return viper.GetString(global.AppName)
+}
+
+// AppVer return application version
+func AppVer() string {
+	return viper.GetString(global.AppVer)
+}
+
+// DbEnabled return whether db integration is enabled
+func DbEnabled() bool {
+	return viper.GetBool(global.DbEnabled)
+}
+
+// DbType return the db type (postgres, mysql, oracle, sqlserver, etc ...)
+func DbType() string {
+	return viper.GetString(global.DbType)
+}
+
+// DbConnectionString return the connection string according database type
+func DbConnectionString() string {
+	return viper.GetString(global.DbConnectionString)
+}
+
+// DbShowSQL return whether sql should be printed out in console
+func DbShowSQL() bool {
+	return viper.GetBool(global.DbShowSQL)
+}
+
 // Custom return custom configuration
 func Custom(key string) any {
 	return viper.Get(key)

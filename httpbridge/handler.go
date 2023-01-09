@@ -2,6 +2,7 @@ package httpbridge
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/rlanhellas/aruna/global"
 	"github.com/rlanhellas/aruna/logger"
@@ -14,16 +15,20 @@ func HttpHandler(ginctx *gin.Context, ctx context.Context, routeHttp *RouteHttp)
 
 	logger.Debug(newCtx, "handling path %s, method %s", routeHttp.Path, routeHttp.Method)
 
-	err := ginctx.BindJSON(routeHttp.HandlerInput)
-	if err != nil {
-		logger.Error(newCtx, "error trying to bindJson. %s", err.Error())
-		ginctx.JSON(http.StatusBadRequest, BaseHttpResponse{
-			ErrorMessage: "can not bind your object to json",
-		})
-		return
+	var in any
+	if routeHttp.HandlerInputGenerator != nil {
+		in = routeHttp.HandlerInputGenerator()
+		err := ginctx.BindJSON(in)
+		if err != nil {
+			logger.Error(newCtx, "error trying to bindJson. %s", err.Error())
+			ginctx.JSON(http.StatusBadRequest, BaseHttpResponse{
+				ErrorMessage: fmt.Sprintf("can not bind your object to json. %s", err.Error()),
+			})
+			return
+		}
 	}
 
-	handlerResponse := routeHttp.Handler(newCtx, routeHttp.HandlerInput, ginctx.Params)
+	handlerResponse := routeHttp.Handler(newCtx, in, ginctx.Params)
 	logger.Debug(newCtx, "handler response status code %d. error: %v", handlerResponse.StatusCode, handlerResponse.Error)
 	baseHttpResponse := BaseHttpResponse{}
 	baseHttpResponse.Data = handlerResponse.Data
