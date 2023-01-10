@@ -10,6 +10,8 @@ import (
 	"github.com/rlanhellas/aruna/httpbridge"
 	"github.com/rlanhellas/aruna/logger"
 	"github.com/spf13/viper"
+	swaggerfiles "github.com/swaggo/files"
+	ginswagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/driver/postgres"
@@ -94,6 +96,8 @@ func setupHttpServer(routes []*httpbridge.RouteHttp, ctx context.Context) {
 			}
 		})
 	}
+
+	r.GET("/doc/*any", ginswagger.WrapHandler(swaggerfiles.Handler))
 
 	err := r.Run("0.0.0.0:" + strconv.Itoa(config.HttpServerPort()))
 	if err != nil {
