@@ -86,8 +86,12 @@ func GetSequenceId(sequenceName string) uint64 {
 }
 
 // ExecSQL execute a native sql and store the result in dest variable
-func ExecSQL(sql string, dest any, args ...string) {
-	client.Raw(sql, args).Scan(dest)
+func ExecSQL(sql string, dest any, args ...any) {
+	if args != nil {
+		client.Raw(sql, args).Scan(dest)
+	} else {
+		client.Raw(sql).Scan(dest)
+	}
 }
 
 // DeleteWithBindHandlerHttp delete entity and return the response to be used by HTTP handlers
