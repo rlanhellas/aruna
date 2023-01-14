@@ -78,6 +78,18 @@ func GetById(ctx context.Context, domain domain.BaseDomain) (*gorm.DB, any) {
 	return result, domain
 }
 
+// GetSequenceId Get a ID sequence on database
+func GetSequenceId(sequenceName string) uint64 {
+	var nextval uint64
+	client.Raw("SELECT nextval('?') as nextval;", sequenceName).Scan(&nextval)
+	return nextval
+}
+
+// ExecSQL execute a native sql and store the result in dest variable
+func ExecSQL(sql string, dest any, args ...string) {
+	client.Raw(sql, args).Scan(dest)
+}
+
 // DeleteWithBindHandlerHttp delete entity and return the response to be used by HTTP handlers
 func DeleteWithBindHandlerHttp(ctx context.Context, domain domain.BaseDomain) *httpbridge.HandlerHttpResponse {
 	result := Delete(ctx, domain)
