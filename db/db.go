@@ -81,7 +81,7 @@ func GetById(ctx context.Context, domain domain.BaseDomain) (*gorm.DB, any) {
 // GetSequenceId Get a ID sequence on database
 func GetSequenceId(sequenceName string) uint64 {
 	var nextval uint64
-	client.Raw("SELECT nextval('?') as nextval;", sequenceName).Scan(&nextval)
+	client.Raw("SELECT nextval(?) as nextval;", sequenceName).Scan(&nextval)
 	return nextval
 }
 
