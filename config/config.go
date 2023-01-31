@@ -12,12 +12,17 @@ func HttpServerPort() int {
 
 // HttpServerEnabled return whether http server is enabled
 func HttpServerEnabled() bool {
-	return viper.GetBool(global.HttpServerEnabled)
+	return viper.InConfig(global.HttpServerEnabled) && viper.GetBool(global.HttpServerEnabled)
 }
 
 // LoggerLevel return logger level
 func LoggerLevel() string {
 	return viper.GetString(global.LoggerLevel)
+}
+
+// LoggerPath return path to write logs
+func LoggerPath() string {
+	return viper.GetString(global.LoggerPath)
 }
 
 // LoggerEncoding return logger encoding (console or json)
@@ -37,7 +42,7 @@ func AppVer() string {
 
 // DbEnabled return whether db integration is enabled
 func DbEnabled() bool {
-	return viper.GetBool(global.DbEnabled)
+	return viper.InConfig(global.DbEnabled) && viper.GetBool(global.DbEnabled)
 }
 
 // DbType return the db type (postgres, mysql, oracle, sqlserver, etc ...)

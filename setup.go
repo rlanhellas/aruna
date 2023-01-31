@@ -3,6 +3,11 @@ package aruna
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"reflect"
+	"strconv"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rlanhellas/aruna/config"
 	"github.com/rlanhellas/aruna/db"
@@ -17,10 +22,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	loggergorm "gorm.io/gorm/logger"
-	"net/http"
-	"reflect"
-	"strconv"
-	"strings"
 )
 
 func setupLogger() {
@@ -29,6 +30,16 @@ func setupLogger() {
 	level, err := zap.ParseAtomicLevel(config.LoggerLevel())
 	if err != nil {
 		panic(err)
+	}
+
+	outputPaths := []string{"stdout"}
+	if config.LoggerPath() != "" {
+		outputPaths = append(outputPaths, config.LoggerPath())
+	}
+
+	errOutputPaths := []string{"stderr"}
+	if config.LoggerPath() != "" {
+		errOutputPaths = append(errOutputPaths, config.LoggerPath())
 	}
 
 	l, err = zap.Config{
@@ -53,8 +64,8 @@ func setupLogger() {
 			EncodeDuration: zapcore.SecondsDurationEncoder,
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		},
-		OutputPaths:      []string{"stdout"},
-		ErrorOutputPaths: []string{"stderr"},
+		OutputPaths:      outputPaths,
+		ErrorOutputPaths: errOutputPaths,
 	}.Build()
 
 	if err != nil {

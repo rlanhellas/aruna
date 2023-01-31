@@ -4,6 +4,7 @@ const (
 	AppName            = "app.name"
 	AppVer             = "app.version"
 	LoggerLevel        = "logger.level"
+	LoggerPath         = "logger.path"
 	LoggerEncoding     = "logger.encoding"
 	HttpServerPort     = "http.port"
 	HttpServerEnabled  = "http.enabled"

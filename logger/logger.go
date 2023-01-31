@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+
 	"github.com/rlanhellas/aruna/global"
 	"go.uber.org/zap"
 )
@@ -34,9 +35,10 @@ func Error(ctx context.Context, msg string, args ...interface{}) {
 }
 
 func enrichedLogger(ctx context.Context) *zap.SugaredLogger {
+	l := logger.WithOptions(zap.AddCallerSkip(1))
 	if ctx.Value(global.CorrelationID) != nil {
-		return logger.With(zap.String(global.CorrelationID, ctx.Value(global.CorrelationID).(string)))
-	} else {
-		return logger
+		l = l.With(zap.String(global.CorrelationID, ctx.Value(global.CorrelationID).(string)))
 	}
+
+	return l
 }
