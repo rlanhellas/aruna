@@ -60,6 +60,31 @@ func DbShowSQL() bool {
 	return viper.GetBool(global.DbShowSQL)
 }
 
+// SecurityEnabled return whether security is enabled or not for HTTP calls
+func SecurityEnabled() bool {
+	return viper.InConfig(global.SecurityEnabled) && viper.GetBool(global.SecurityEnabled)
+}
+
+// SecurityClientId return clientid for OAuth2 flow
+func SecurityClientId() string {
+	return viper.GetString(global.SecurityClientId)
+}
+
+// SecurityClientSecret return clientsecret for OAuth2 flow
+func SecurityClientSecret() string {
+	return viper.GetString(global.SecurityClientSecret)
+}
+
+// SecurityTokenUri return token uri for OAuth2 flow
+func SecurityTokenUri() string {
+	return viper.GetString(global.SecurityTokenUri)
+}
+
+// SecurityJwkUri return jwk uri for OAuth2 flow
+func SecurityJwkUri() string {
+	return viper.GetString(global.SecurityJwkUri)
+}
+
 // Custom return custom configuration
 func Custom(key string) any {
 	return viper.Get(key)

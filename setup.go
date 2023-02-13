@@ -14,6 +14,7 @@ import (
 	"github.com/rlanhellas/aruna/global"
 	"github.com/rlanhellas/aruna/httpbridge"
 	"github.com/rlanhellas/aruna/logger"
+	"github.com/rlanhellas/aruna/security"
 	"github.com/spf13/viper"
 	swaggerfiles "github.com/swaggo/files"
 	ginswagger "github.com/swaggo/gin-swagger"
@@ -60,7 +61,7 @@ func setupLogger() {
 			StacktraceKey:  "stacktrace",
 			LineEnding:     zapcore.DefaultLineEnding,
 			EncodeLevel:    zapcore.LowercaseLevelEncoder,
-			EncodeTime:     zapcore.EpochTimeEncoder,
+			EncodeTime:     zapcore.ISO8601TimeEncoder,
 			EncodeDuration: zapcore.SecondsDurationEncoder,
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		},
@@ -92,20 +93,35 @@ func setupConfig() {
 	}
 }
 func setupMetrics() {}
-func setupHttpServer(routes []*httpbridge.RouteHttp, ctx context.Context) {
+func setupHttpServer(routesGroup []*httpbridge.RouteGroupHttp, ctx context.Context) {
 	r := gin.Default()
 
-	//process routes
-	mapRoutes := make(map[string]*httpbridge.RouteHttp, len(routes))
-	for _, route := range routes {
-		mapRoutes[fmt.Sprintf("%s@%s", route.Path, route.Method)] = route
-		r.Handle(route.Method, route.Path, func(ginctx *gin.Context) {
-			if innerRoute, ok := mapRoutes[fmt.Sprintf("%s@%s", ginctx.FullPath(), ginctx.Request.Method)]; ok {
-				httpbridge.HttpHandler(ginctx, ctx, innerRoute)
-			} else {
-				ginctx.JSON(http.StatusInternalServerError, "Route not mapped")
-			}
-		})
+	for _, group := range routesGroup {
+		g := r.Group(group.Path)
+		if group.Authenticated && config.SecurityEnabled() {
+			g.Use(func(c *gin.Context) {
+				authHeader := c.GetHeader("Authorization")
+				if authHeader == "" {
+					c.AbortWithStatus(http.StatusForbidden)
+				}
+
+				if !security.ValidateJwt(ctx, authHeader) {
+					c.AbortWithStatus(http.StatusForbidden)
+				}
+			})
+		}
+
+		mapRoutes := make(map[string]*httpbridge.RouteHttp, len(group.Routes))
+		for _, route := range group.Routes {
+			mapRoutes[fmt.Sprintf("%s%s@%s", group.Path, route.Path, route.Method)] = route
+			g.Handle(route.Method, route.Path, func(ginctx *gin.Context) {
+				if innerRoute, ok := mapRoutes[fmt.Sprintf("%s@%s", ginctx.FullPath(), ginctx.Request.Method)]; ok {
+					httpbridge.HttpHandler(ginctx, ctx, innerRoute)
+				} else {
+					ginctx.JSON(http.StatusInternalServerError, "Route not mapped")
+				}
+			})
+		}
 	}
 
 	r.GET("/doc/*any", ginswagger.WrapHandler(swaggerfiles.Handler))

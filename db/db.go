@@ -2,12 +2,13 @@ package db
 
 import (
 	"context"
+	"net/http"
+	"strings"
+
 	"github.com/rlanhellas/aruna/domain"
 	"github.com/rlanhellas/aruna/httpbridge"
 	"github.com/rlanhellas/aruna/logger"
 	"gorm.io/gorm"
-	"net/http"
-	"strings"
 )
 
 var client *gorm.DB

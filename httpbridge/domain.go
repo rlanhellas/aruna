@@ -6,6 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type RouteGroupHttp struct {
+	Path          string
+	Authenticated bool
+	Routes        []*RouteHttp
+}
+
 // RouteHttp configure a http route
 type RouteHttp struct {
 	Path                  string
