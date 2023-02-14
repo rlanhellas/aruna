@@ -52,8 +52,8 @@ func Update(ctx context.Context, domain domain.BaseDomain) *gorm.DB {
 }
 
 // GetByIdWithBindHandlerHttp return entity by id to be used by HTTP handlers
-func GetByIdWithBindHandlerHttp(ctx context.Context, domain domain.BaseDomain) *httpbridge.HandlerHttpResponse {
-	r, e := GetById(ctx, domain)
+func GetByIdWithBindHandlerHttp(ctx context.Context, domain domain.BaseDomain, preload []string) *httpbridge.HandlerHttpResponse {
+	r, e := GetById(ctx, domain, preload)
 	if r.RowsAffected > 0 {
 		return resolveHandlerResponse(r.Error, http.StatusOK, e)
 	} else {
@@ -73,9 +73,23 @@ func EntityExist(ctx context.Context, domain domain.BaseDomain) (*gorm.DB, bool)
 }
 
 // GetById get entity by id
-func GetById(ctx context.Context, domain domain.BaseDomain) (*gorm.DB, any) {
+func GetById(ctx context.Context, domain domain.BaseDomain, preload []string) (*gorm.DB, any) {
 	logger.Debug(ctx, "getting entity[%s] %+v by id", domain.TableName(), domain)
-	result := client.Find(domain)
+	var result *gorm.DB
+	if preload != nil && len(preload) > 0 {
+		tx := client.Preload(preload[0])
+		for i, p := range preload {
+			if i == 0 {
+				continue
+			}
+
+			tx = tx.Preload(p)
+		}
+		result = tx.Find(domain)
+	} else {
+		result = client.Find(domain)
+	}
+
 	return result, domain
 }
 
