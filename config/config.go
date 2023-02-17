@@ -12,12 +12,17 @@ func HttpServerPort() int {
 
 // HttpServerEnabled return whether http server is enabled
 func HttpServerEnabled() bool {
-	return viper.GetBool(global.HttpServerEnabled)
+	return viper.InConfig(global.HttpServerEnabled) && viper.GetBool(global.HttpServerEnabled)
 }
 
 // LoggerLevel return logger level
 func LoggerLevel() string {
 	return viper.GetString(global.LoggerLevel)
+}
+
+// LoggerPath return path to write logs
+func LoggerPath() string {
+	return viper.GetString(global.LoggerPath)
 }
 
 // LoggerEncoding return logger encoding (console or json)
@@ -37,7 +42,7 @@ func AppVer() string {
 
 // DbEnabled return whether db integration is enabled
 func DbEnabled() bool {
-	return viper.GetBool(global.DbEnabled)
+	return viper.InConfig(global.DbEnabled) && viper.GetBool(global.DbEnabled)
 }
 
 // DbType return the db type (postgres, mysql, oracle, sqlserver, etc ...)
@@ -53,6 +58,31 @@ func DbConnectionString() string {
 // DbShowSQL return whether sql should be printed out in console
 func DbShowSQL() bool {
 	return viper.GetBool(global.DbShowSQL)
+}
+
+// SecurityEnabled return whether security is enabled or not for HTTP calls
+func SecurityEnabled() bool {
+	return viper.InConfig(global.SecurityEnabled) && viper.GetBool(global.SecurityEnabled)
+}
+
+// SecurityClientId return clientid for OAuth2 flow
+func SecurityClientId() string {
+	return viper.GetString(global.SecurityClientId)
+}
+
+// SecurityClientSecret return clientsecret for OAuth2 flow
+func SecurityClientSecret() string {
+	return viper.GetString(global.SecurityClientSecret)
+}
+
+// SecurityTokenUri return token uri for OAuth2 flow
+func SecurityTokenUri() string {
+	return viper.GetString(global.SecurityTokenUri)
+}
+
+// SecurityJwkUri return jwk uri for OAuth2 flow
+func SecurityJwkUri() string {
+	return viper.GetString(global.SecurityJwkUri)
 }
 
 // Custom return custom configuration

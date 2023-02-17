@@ -12,3 +12,9 @@ db:
   type: postgres
   showsql: true
   connectionstring: "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
+security:
+  enabled: true
+  clientid: aruna
+  clientsecret: bfd43856-1320-4703-b029-951abb60dbba
+  tokenuri: https://sso-plataformagt.gtconsultoria.com.br/auth/realms/plataformagt/protocol/openid-connect/token
+  jwkuri: https://sso-plataformagt.gtconsultoria.com.br/auth/realms/plataformagt/protocol/openid-connect/certs

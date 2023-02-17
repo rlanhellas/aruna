@@ -3,10 +3,11 @@ package httpbridge
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rlanhellas/aruna/global"
 	"github.com/rlanhellas/aruna/logger"
-	"net/http"
 )
 
 // HttpHandler handler for all http requests
