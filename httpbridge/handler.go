@@ -12,7 +12,9 @@ import (
 
 // HttpHandler handler for all http requests
 func HttpHandler(ginctx *gin.Context, ctx context.Context, routeHttp *RouteHttp) {
-	newCtx := context.WithValue(ctx, global.CorrelationID, ginctx.GetHeader(global.CorrelationID))
+	form, _ := ginctx.MultipartForm()
+	interCtx := context.WithValue(ctx, global.CorrelationID, ginctx.GetHeader(global.CorrelationID))
+	newCtx := context.WithValue(interCtx, global.RequestForm, form)
 
 	logger.Debug(newCtx, "handling path %s, method %s", routeHttp.Path, routeHttp.Method)
 

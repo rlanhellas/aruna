@@ -10,14 +10,17 @@ const (
 	HttpServerEnabled    = "http.enabled"
 	DbEnabled            = "db.enabled"
 	DbType               = "db.type"
-	DbConnectionString   = "db.connectionstring"
+	DbSchema             = "db.schema"
 	DbShowSQL            = "db.showsql"
+	DbUseSchema          = "db.useschema"
+	DbConnectionString   = "db.connectionstring"
 	SecurityEnabled      = "security.enabled"
 	SecurityClientId     = "security.clientid"
 	SecurityClientSecret = "security.clientsecret"
 	SecurityTokenUri     = "security.tokenuri"
 	SecurityJwkUri       = "security.jwkuri"
 	CorrelationID        = "correlationid"
+	RequestForm          = "requestForm"
 
 	PostgresDBType = "postgres"
 )

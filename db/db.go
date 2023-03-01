@@ -2,13 +2,13 @@ package db
 
 import (
 	"context"
-	"net/http"
-	"strings"
-
 	"github.com/rlanhellas/aruna/domain"
 	"github.com/rlanhellas/aruna/httpbridge"
 	"github.com/rlanhellas/aruna/logger"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"net/http"
+	"strings"
 )
 
 var client *gorm.DB
@@ -34,9 +34,19 @@ func Create(ctx context.Context, domain domain.BaseDomain) *gorm.DB {
 func UpdateWithBindHandlerHttp(ctx context.Context, domain domain.BaseDomain) *httpbridge.HandlerHttpResponse {
 	result := Update(ctx, domain)
 	if result.RowsAffected > 0 {
-		return resolveHandlerResponse(result.Error, http.StatusOK, domain)
+		return resolveHandlerResponse(nil, http.StatusOK, domain)
 	} else {
-		return resolveHandlerResponse(nil, http.StatusNotFound, nil)
+		return resolveHandlerResponse(result.Error, http.StatusNotFound, nil)
+	}
+}
+
+// UpdateSpecificAttributesWithBindHandlerHttp update entity and return the response to be used by HTTP handlers
+func UpdateSpecificAttributesWithBindHandlerHttp(ctx context.Context, domain domain.BaseDomain, updateinformation map[string]interface{}) *httpbridge.HandlerHttpResponse {
+	result := UpdateSpecificAttributes(ctx, domain, updateinformation)
+	if result.RowsAffected > 0 {
+		return resolveHandlerResponse(nil, http.StatusOK, domain)
+	} else {
+		return resolveHandlerResponse(result.Error, http.StatusNotFound, nil)
 	}
 }
 
@@ -51,13 +61,24 @@ func Update(ctx context.Context, domain domain.BaseDomain) *gorm.DB {
 	}
 }
 
+// UpdateSpecificAttributes specific attributes on table db
+func UpdateSpecificAttributes(ctx context.Context, domain domain.BaseDomain, updateinformation map[string]interface{}) *gorm.DB {
+	logger.Debug(ctx, "updating attributes entity[%s]: %+v", domain.TableName(), domain)
+	r, exist := EntityExist(ctx, domain)
+	if exist {
+		return client.Model(domain).Updates(updateinformation)
+	} else {
+		return r
+	}
+}
+
 // GetByIdWithBindHandlerHttp return entity by id to be used by HTTP handlers
 func GetByIdWithBindHandlerHttp(ctx context.Context, domain domain.BaseDomain, preload []string) *httpbridge.HandlerHttpResponse {
 	r, e := GetById(ctx, domain, preload)
 	if r.RowsAffected > 0 {
-		return resolveHandlerResponse(r.Error, http.StatusOK, e)
+		return resolveHandlerResponse(nil, http.StatusOK, e)
 	} else {
-		return resolveHandlerResponse(nil, http.StatusNotFound, nil)
+		return resolveHandlerResponse(r.Error, http.StatusNotFound, nil)
 	}
 }
 
@@ -82,14 +103,12 @@ func GetById(ctx context.Context, domain domain.BaseDomain, preload []string) (*
 			if i == 0 {
 				continue
 			}
-
 			tx = tx.Preload(p)
 		}
 		result = tx.Find(domain)
 	} else {
-		result = client.Find(domain)
+		result = client.Preload(clause.Associations).Find(domain)
 	}
-
 	return result, domain
 }
 
@@ -113,7 +132,7 @@ func ExecSQL(sql string, dest any, args ...any) {
 func DeleteWithBindHandlerHttp(ctx context.Context, domain domain.BaseDomain) *httpbridge.HandlerHttpResponse {
 	result := Delete(ctx, domain)
 	if result.RowsAffected > 0 {
-		return resolveHandlerResponse(result.Error, http.StatusOK, nil)
+		return resolveHandlerResponse(nil, http.StatusOK, nil)
 	} else {
 		return resolveHandlerResponse(result.Error, http.StatusNotFound, nil)
 	}
@@ -131,7 +150,6 @@ func resolveHandlerResponse(err error, successStatus int, data any) *httpbridge.
 		if strings.Contains(err.Error(), "duplicate key") {
 			statusCodeError = http.StatusConflict
 		}
-
 		return &httpbridge.HandlerHttpResponse{
 			Error:      err,
 			StatusCode: statusCodeError,

@@ -55,9 +55,19 @@ func DbConnectionString() string {
 	return viper.GetString(global.DbConnectionString)
 }
 
+// DbSchema return the schema string according database type
+func DbSchema() string {
+	return viper.GetString(global.DbSchema)
+}
+
 // DbShowSQL return whether sql should be printed out in console
 func DbShowSQL() bool {
 	return viper.GetBool(global.DbShowSQL)
+}
+
+// DbUseSchema return whether a schema is used
+func DbUseSchema() bool {
+	return viper.GetBool(global.DbUseSchema)
 }
 
 // SecurityEnabled return whether security is enabled or not for HTTP calls
