@@ -60,6 +60,11 @@ func DbShowSQL() bool {
 	return viper.GetBool(global.DbShowSQL)
 }
 
+// DbSchema return the schema
+func DbSchema() string {
+	return viper.GetString(global.DbSchema)
+}
+
 // SecurityEnabled return whether security is enabled or not for HTTP calls
 func SecurityEnabled() bool {
 	return viper.InConfig(global.SecurityEnabled) && viper.GetBool(global.SecurityEnabled)

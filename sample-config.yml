@@ -10,6 +10,7 @@ http:
 db:
   enabled: true
   type: postgres
+  schema: test
   showsql: true
   connectionstring: "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
 security:

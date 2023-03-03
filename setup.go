@@ -143,8 +143,13 @@ func setupDB(ctx context.Context, migrateTables []any) {
 		clientdb, err := gorm.Open(postgres.Open(config.DbConnectionString()), &gorm.Config{
 			Logger: gormLogLevel,
 		})
+
 		if err != nil {
 			panic(err)
+		}
+
+		if config.DbSchema() != "" {
+			clientdb.Exec(fmt.Sprintf("set search_path='%s'", config.DbSchema()))
 		}
 
 		if migrateTables != nil {

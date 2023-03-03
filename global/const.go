@@ -11,6 +11,7 @@ const (
 	DbEnabled            = "db.enabled"
 	DbType               = "db.type"
 	DbConnectionString   = "db.connectionstring"
+	DbSchema             = "db.schema"
 	DbShowSQL            = "db.showsql"
 	SecurityEnabled      = "security.enabled"
 	SecurityClientId     = "security.clientid"
