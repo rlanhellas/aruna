@@ -3,7 +3,6 @@ package aruna
 import (
 	"context"
 	"fmt"
-	"gorm.io/gorm/schema"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -139,21 +138,10 @@ func setupDB(ctx context.Context, migrateTables []any) {
 		gormLogLevel = loggergorm.Default.LogMode(loggergorm.Info)
 	}
 
-	schemaNameStrategy := schema.NamingStrategy{}
-	if config.DbUseSchema() {
-		projectSchema := config.DbSchema() + "."
-		schemaNameStrategy = schema.NamingStrategy{
-			TablePrefix:   projectSchema,
-			SingularTable: false,
-		}
-		logger.Debug(ctx, "connection for schema: %s", projectSchema)
-	}
-
 	switch config.DbType() {
 	case global.PostgresDBType:
 		clientdb, err := gorm.Open(postgres.Open(config.DbConnectionString()), &gorm.Config{
-			Logger:         gormLogLevel,
-			NamingStrategy: schemaNameStrategy,
+			Logger: gormLogLevel,
 		})
 
 		if err != nil {
