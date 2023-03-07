@@ -13,6 +13,14 @@ import (
 
 var client *gorm.DB
 
+type Pageable struct {
+	Results     any
+	CurrentPage int
+	CurrentRows int
+	TotalPages  int
+	TotalRows   int
+}
+
 // SetClient configure database client
 func SetClient(c *gorm.DB) {
 	client = c
@@ -142,6 +150,72 @@ func DeleteWithBindHandlerHttp(ctx context.Context, domain domain.BaseDomain) *h
 func Delete(ctx context.Context, domain domain.BaseDomain) *gorm.DB {
 	logger.Debug(ctx, "deleting entity[%s] %+v", domain.TableName(), domain)
 	return client.Delete(domain)
+}
+
+// ListWithBindHandlerHttp entities based on where and return response to be used by HTTP handlers
+func ListWithBindHandlerHttp(ctx context.Context, where string, whereArgs []string, pageSize int, page int, domain domain.BaseDomain, results any) *httpbridge.HandlerHttpResponse {
+	r, db := List(ctx, where, whereArgs, pageSize, page, domain, results)
+	if db != nil {
+		if db.RowsAffected == 0 {
+			return resolveHandlerResponse(db.Error, http.StatusNoContent, nil)
+		}
+
+		return resolveHandlerResponse(db.Error, http.StatusOK, r)
+	} else {
+		return resolveHandlerResponse(nil, http.StatusNoContent, nil)
+	}
+
+}
+
+// List entities based on where
+func List(ctx context.Context, where string, whereArgs []string, pageSize int, page int, domain domain.BaseDomain, results any) (*Pageable, *gorm.DB) {
+
+	if page <= 0 {
+		page = 1
+	}
+
+	logger.Debug(ctx, "listing based on where [%v], whereArgs[%v], pageSize[%d], page[%d], domain[%s]", where, whereArgs, pageSize, page, domain.TableName())
+	totalRows := int64(0)
+	pageSize64 := int64(pageSize)
+
+	txDB := client.Model(domain)
+
+	if where != "" {
+		txDB.Where(where, whereArgs)
+	}
+
+	txDB.Count(&totalRows)
+
+	pages := totalRows / pageSize64
+	if (totalRows % pageSize64) > 0 {
+		pages++
+	}
+
+	if int64(page) > pages {
+		return &Pageable{
+			CurrentRows: 0,
+			CurrentPage: page,
+			TotalPages:  int(pages),
+			TotalRows:   int(totalRows),
+		}, nil
+	}
+
+	offset := (page - 1) * pageSize
+
+	txDB = client.Offset(offset).Limit(pageSize)
+	if where != "" {
+		txDB.Where(where, whereArgs)
+	}
+
+	dbResult := txDB.Find(&results)
+
+	return &Pageable{
+		CurrentRows: int(dbResult.RowsAffected),
+		Results:     results,
+		CurrentPage: page,
+		TotalPages:  int(pages),
+		TotalRows:   int(totalRows),
+	}, dbResult
 }
 
 func resolveHandlerResponse(err error, successStatus int, data any) *httpbridge.HandlerHttpResponse {
