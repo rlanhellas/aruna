@@ -15,7 +15,7 @@ type RouteGroupHttp struct {
 // RouteHttp configure a http route
 type RouteHttp struct {
 	Path                  string
-	Handler               func(ctx context.Context, in any, params gin.Params) *HandlerHttpResponse
+	Handler               func(ctx context.Context, in any, ginctx *gin.Context) *HandlerHttpResponse
 	HandlerInputGenerator func() any //func to generate new input instance to be bound in HTTP request
 	Method                string
 }
