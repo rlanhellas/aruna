@@ -152,9 +152,15 @@ func Delete(ctx context.Context, domain domain.BaseDomain) *gorm.DB {
 	return client.Delete(domain)
 }
 
+// Delete entity with association on db
+func DeleteWithAssociation(ctx context.Context, domain, target domain.BaseDomain, association string) error {
+	logger.Debug(ctx, "deleting association[%s] in entity %+v", association, domain)
+	return client.Model(domain).Association(association).Delete(target)
+}
+
 // ListWithBindHandlerHttp entities based on where and return response to be used by HTTP handlers
-func ListWithBindHandlerHttp(ctx context.Context, where string, whereArgs []string, pageSize int, page int, domain domain.BaseDomain, results any) *httpbridge.HandlerHttpResponse {
-	r, db := List(ctx, where, whereArgs, pageSize, page, domain, results)
+func ListWithBindHandlerHttp(ctx context.Context, where, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) *httpbridge.HandlerHttpResponse {
+	r, db := List(ctx, where, orderBy, whereArgs, pageSize, page, domain, results)
 	if db != nil {
 		if db.RowsAffected == 0 {
 			return resolveHandlerResponse(db.Error, http.StatusNoContent, nil)
@@ -168,7 +174,7 @@ func ListWithBindHandlerHttp(ctx context.Context, where string, whereArgs []stri
 }
 
 // List entities based on where
-func List(ctx context.Context, where string, whereArgs []string, pageSize int, page int, domain domain.BaseDomain, results any) (*Pageable, *gorm.DB) {
+func List(ctx context.Context, where, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) (*Pageable, *gorm.DB) {
 
 	if page <= 0 {
 		page = 1
@@ -193,8 +199,8 @@ func List(ctx context.Context, where string, whereArgs []string, pageSize int, p
 
 	if int64(page) > pages {
 		return &Pageable{
-			CurrentRows: 0,
 			CurrentPage: page,
+			CurrentRows: 0,
 			TotalPages:  int(pages),
 			TotalRows:   int(totalRows),
 		}, nil
@@ -204,15 +210,19 @@ func List(ctx context.Context, where string, whereArgs []string, pageSize int, p
 
 	txDB = client.Offset(offset).Limit(pageSize)
 	if where != "" {
-		txDB.Where(where, whereArgs)
+		txDB.Where(where, whereArgs).Order(orderBy)
+	}
+
+	if orderBy != "" {
+		txDB.Order(orderBy)
 	}
 
 	dbResult := txDB.Find(&results)
 
 	return &Pageable{
-		CurrentRows: int(dbResult.RowsAffected),
 		Results:     results,
 		CurrentPage: page,
+		CurrentRows: int(dbResult.RowsAffected),
 		TotalPages:  int(pages),
 		TotalRows:   int(totalRows),
 	}, dbResult
