@@ -14,11 +14,15 @@ import (
 var client *gorm.DB
 
 type Pageable struct {
-	Results     any
-	CurrentPage int
-	CurrentRows int
-	TotalPages  int
-	TotalRows   int
+	Content          any  `json:"content"`
+	Page             int  `json:"page"`
+	TotalPages       int  `json:"totalPages"`
+	Last             bool `json:"last"`
+	TotalElements    int  `json:"totalElements"`
+	Size             int  `json:"size"`
+	First            bool `json:"first"`
+	NumberOfElements int  `json:"numberOfElements"`
+	Empty            bool `json:"empty"`
 }
 
 // SetClient configure database client
@@ -181,7 +185,7 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 	}
 
 	logger.Debug(ctx, "listing based on where [%v], whereArgs[%v], pageSize[%d], page[%d], domain[%s]", where, whereArgs, pageSize, page, domain.TableName())
-	totalRows := int64(0)
+	TotalElements := int64(0)
 	pageSize64 := int64(pageSize)
 
 	txDB := client.Model(domain)
@@ -192,25 +196,31 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 		}
 	}
 
-	txDB.Count(&totalRows)
+	txDB.Count(&TotalElements)
 
-	pages := totalRows / pageSize64
-	if (totalRows % pageSize64) > 0 {
+	pages := TotalElements / pageSize64
+	if (TotalElements % pageSize64) > 0 {
 		pages++
+	}
+
+	isFirstPage := false
+	if page == 1 {
+		isFirstPage = true
 	}
 
 	if int64(page) > pages {
 		return &Pageable{
-			CurrentPage: page,
-			CurrentRows: 0,
-			TotalPages:  int(pages),
-			TotalRows:   int(totalRows),
+			Page:          page,
+			First:         isFirstPage,
+			TotalPages:    int(pages),
+			TotalElements: int(TotalElements),
 		}, nil
 	}
 
 	offset := (page - 1) * pageSize
 
 	txDB = client.Offset(offset).Limit(pageSize)
+
 	if len(where) > 0 {
 		for i, whereName := range where {
 			txDB.Where(whereName, whereArgs[i]).Order(orderBy)
@@ -222,13 +232,22 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 	}
 
 	dbResult := txDB.Find(&results)
+	numberOfElements := pageSize
+	last := false
+	if page == int(pages) {
+		last = true
+		numberOfElements = int(TotalElements) - offset
+	}
 
 	return &Pageable{
-		Results:     results,
-		CurrentPage: page,
-		CurrentRows: int(dbResult.RowsAffected),
-		TotalPages:  int(pages),
-		TotalRows:   int(totalRows),
+		Content:          results,
+		Page:             page,
+		First:            isFirstPage,
+		NumberOfElements: numberOfElements,
+		TotalPages:       int(pages),
+		Last:             last,
+		TotalElements:    int(TotalElements),
+		Size:             int(TotalElements),
 	}, dbResult
 }
 
