@@ -159,7 +159,7 @@ func DeleteWithAssociation(ctx context.Context, domain, target domain.BaseDomain
 }
 
 // ListWithBindHandlerHttp entities based on where and return response to be used by HTTP handlers
-func ListWithBindHandlerHttp(ctx context.Context, where, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) *httpbridge.HandlerHttpResponse {
+func ListWithBindHandlerHttp(ctx context.Context, where []string, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) *httpbridge.HandlerHttpResponse {
 	r, db := List(ctx, where, orderBy, whereArgs, pageSize, page, domain, results)
 	if db != nil {
 		if db.RowsAffected == 0 {
@@ -174,7 +174,7 @@ func ListWithBindHandlerHttp(ctx context.Context, where, orderBy string, whereAr
 }
 
 // List entities based on where
-func List(ctx context.Context, where, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) (*Pageable, *gorm.DB) {
+func List(ctx context.Context, where []string, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) (*Pageable, *gorm.DB) {
 
 	if page <= 0 {
 		page = 1
@@ -186,8 +186,10 @@ func List(ctx context.Context, where, orderBy string, whereArgs []string, pageSi
 
 	txDB := client.Model(domain)
 
-	if where != "" {
-		txDB.Where(where, whereArgs)
+	if len(where) > 0 {
+		for i, whereName := range where {
+			txDB.Where(whereName, whereArgs[i])
+		}
 	}
 
 	txDB.Count(&totalRows)
@@ -209,8 +211,10 @@ func List(ctx context.Context, where, orderBy string, whereArgs []string, pageSi
 	offset := (page - 1) * pageSize
 
 	txDB = client.Offset(offset).Limit(pageSize)
-	if where != "" {
-		txDB.Where(where, whereArgs).Order(orderBy)
+	if len(where) > 0 {
+		for i, whereName := range where {
+			txDB.Where(whereName, whereArgs[i]).Order(orderBy)
+		}
 	}
 
 	if orderBy != "" {
