@@ -18,7 +18,7 @@ type Pageable struct {
 	Page             int  `json:"page"`
 	TotalPages       int  `json:"totalPages"`
 	Last             bool `json:"last"`
-	TotalElements    int  `json:"totalElements"`
+	totalElements    int  `json:"totalElements"`
 	Size             int  `json:"size"`
 	First            bool `json:"first"`
 	NumberOfElements int  `json:"numberOfElements"`
@@ -185,10 +185,15 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 	}
 
 	logger.Debug(ctx, "listing based on where [%v], whereArgs[%v], pageSize[%d], page[%d], domain[%s]", where, whereArgs, pageSize, page, domain.TableName())
-	TotalElements := int64(0)
+	totalElements := int64(0)
+	size := int64(0)
 	pageSize64 := int64(pageSize)
 
 	txDB := client.Model(domain)
+	allElements := client.Model(domain)
+
+	allElements.Select("*", txDB)
+	txDB.Count(&totalElements)
 
 	if len(where) > 0 {
 		for i, whereName := range where {
@@ -196,10 +201,10 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 		}
 	}
 
-	txDB.Count(&TotalElements)
+	txDB.Count(&size)
 
-	pages := TotalElements / pageSize64
-	if (TotalElements % pageSize64) > 0 {
+	pages := size / pageSize64
+	if (size % pageSize64) > 0 {
 		pages++
 	}
 
@@ -212,8 +217,9 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 		return &Pageable{
 			Page:          page,
 			First:         isFirstPage,
+			Empty:         true,
 			TotalPages:    int(pages),
-			TotalElements: int(TotalElements),
+			totalElements: int(totalElements),
 		}, nil
 	}
 
@@ -231,23 +237,25 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 		txDB.Order(orderBy)
 	}
 
-	dbResult := txDB.Find(&results)
+	dbResult := txDB.Find(&results, txDB)
+
 	numberOfElements := pageSize
 	last := false
 	if page == int(pages) {
 		last = true
-		numberOfElements = int(TotalElements) - offset
+		numberOfElements = int(totalElements) - offset
 	}
 
 	return &Pageable{
 		Content:          results,
 		Page:             page,
 		First:            isFirstPage,
+		Empty:            false,
 		NumberOfElements: numberOfElements,
 		TotalPages:       int(pages),
 		Last:             last,
-		TotalElements:    int(TotalElements),
-		Size:             int(TotalElements),
+		totalElements:    int(totalElements),
+		Size:             int(size),
 	}, dbResult
 }
 
