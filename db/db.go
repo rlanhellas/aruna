@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"github.com/rlanhellas/aruna/domain"
 	"github.com/rlanhellas/aruna/httpbridge"
 	"github.com/rlanhellas/aruna/logger"
@@ -18,7 +19,7 @@ type Pageable struct {
 	Page             int  `json:"page"`
 	TotalPages       int  `json:"totalPages"`
 	Last             bool `json:"last"`
-	totalElements    int  `json:"totalElements"`
+	TotalElements    int  `json:"totalElements"`
 	Size             int  `json:"size"`
 	First            bool `json:"first"`
 	NumberOfElements int  `json:"numberOfElements"`
@@ -164,36 +165,29 @@ func DeleteWithAssociation(ctx context.Context, domain, target domain.BaseDomain
 
 // ListWithBindHandlerHttp entities based on where and return response to be used by HTTP handlers
 func ListWithBindHandlerHttp(ctx context.Context, where []string, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) *httpbridge.HandlerHttpResponse {
-	r, db := List(ctx, where, orderBy, whereArgs, pageSize, page, domain, results)
+	r, db, erroMenssage := List(ctx, where, orderBy, whereArgs, pageSize, page, domain, results)
 	if db != nil {
 		if db.RowsAffected == 0 {
 			return resolveHandlerResponse(db.Error, http.StatusNoContent, nil)
 		}
-
 		return resolveHandlerResponse(db.Error, http.StatusOK, r)
 	} else {
-		return resolveHandlerResponse(nil, http.StatusNoContent, nil)
+		return resolveHandlerResponse(erroMenssage, http.StatusOK, r)
 	}
 
 }
 
 // List entities based on where
-func List(ctx context.Context, where []string, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) (*Pageable, *gorm.DB) {
+func List(ctx context.Context, where []string, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) (*Pageable, *gorm.DB, error) {
 
 	if page <= 0 {
 		page = 1
 	}
-
 	logger.Debug(ctx, "listing based on where [%v], whereArgs[%v], pageSize[%d], page[%d], domain[%s]", where, whereArgs, pageSize, page, domain.TableName())
+
 	totalElements := int64(0)
-	size := int64(0)
 	pageSize64 := int64(pageSize)
-
 	txDB := client.Model(domain)
-	allElements := client.Model(domain)
-
-	allElements.Select("*", txDB)
-	txDB.Count(&totalElements)
 
 	if len(where) > 0 {
 		for i, whereName := range where {
@@ -201,10 +195,18 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 		}
 	}
 
-	txDB.Count(&size)
+	txDB.Count(&totalElements)
 
-	pages := size / pageSize64
-	if (size % pageSize64) > 0 {
+	logger.Debug(ctx, "list return case nil totalElements[%d]  pageSize[%d]", totalElements, pageSize64)
+
+	if totalElements == 0 {
+		return &Pageable{
+			Empty: true,
+		}, nil, errors.New("Nothing was found with the search term")
+	}
+
+	pages := totalElements / pageSize64
+	if (totalElements % pageSize64) > 0 {
 		pages++
 	}
 
@@ -215,21 +217,22 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 
 	if int64(page) > pages {
 		return &Pageable{
-			Page:          page,
-			First:         isFirstPage,
-			Empty:         true,
-			TotalPages:    int(pages),
-			totalElements: int(totalElements),
-		}, nil
+			Content:          results,
+			NumberOfElements: 0,
+			Last:             false,
+			Size:             int(pageSize64),
+			Page:             page,
+			First:            isFirstPage,
+			Empty:            true,
+			TotalPages:       int(pages),
+			TotalElements:    int(totalElements),
+		}, nil, errors.New("Pagination out of correct range.")
 	}
-
 	offset := (page - 1) * pageSize
-
 	txDB = client.Offset(offset).Limit(pageSize)
-
 	if len(where) > 0 {
 		for i, whereName := range where {
-			txDB.Where(whereName, whereArgs[i]).Order(orderBy)
+			txDB.Where(whereName, whereArgs[i])
 		}
 	}
 
@@ -237,7 +240,7 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 		txDB.Order(orderBy)
 	}
 
-	dbResult := txDB.Find(&results, txDB)
+	dbResult := txDB.Find(&results)
 
 	numberOfElements := pageSize
 	last := false
@@ -254,13 +257,21 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 		NumberOfElements: numberOfElements,
 		TotalPages:       int(pages),
 		Last:             last,
-		totalElements:    int(totalElements),
-		Size:             int(size),
-	}, dbResult
+		TotalElements:    int(totalElements),
+		Size:             int(pageSize64),
+	}, dbResult, nil
 }
 
 func resolveHandlerResponse(err error, successStatus int, data any) *httpbridge.HandlerHttpResponse {
+
 	if err != nil {
+		if successStatus >= 200 && successStatus < 300 {
+			return &httpbridge.HandlerHttpResponse{
+				Error:      err,
+				Data:       data,
+				StatusCode: successStatus,
+			}
+		}
 		statusCodeError := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "duplicate key") {
 			statusCodeError = http.StatusConflict
