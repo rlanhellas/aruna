@@ -3,12 +3,14 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/rlanhellas/aruna/domain"
 	"github.com/rlanhellas/aruna/httpbridge"
 	"github.com/rlanhellas/aruna/logger"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"net/http"
+	"reflect"
 	"strings"
 )
 
@@ -164,8 +166,28 @@ func DeleteWithAssociation(ctx context.Context, domain, target domain.BaseDomain
 }
 
 // ListWithBindHandlerHttp entities based on where and return response to be used by HTTP handlers
-func ListWithBindHandlerHttp(ctx context.Context, where []string, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) *httpbridge.HandlerHttpResponse {
-	r, db, erroMenssage := List(ctx, where, orderBy, whereArgs, pageSize, page, domain, results)
+func ListWithBindHandlerHttp(ctx context.Context, where []string, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any, join ...interface{}) *httpbridge.HandlerHttpResponse {
+
+	var r *Pageable
+	var db *gorm.DB
+	var erroMenssage error
+	var isEmptyJoin = false
+
+	for _, v := range join {
+		if v != nil {
+			if reflect.ValueOf(v).IsZero() {
+				fmt.Println("O valor na interface está vazio")
+				isEmptyJoin = true
+			}
+		}
+	}
+
+	if isEmptyJoin {
+		r, db, erroMenssage = List(ctx, where, orderBy, whereArgs, pageSize, page, domain, results, nil)
+	} else {
+		r, db, erroMenssage = List(ctx, where, orderBy, whereArgs, pageSize, page, domain, results, join)
+	}
+
 	if db != nil {
 		if db.RowsAffected == 0 {
 			return resolveHandlerResponse(db.Error, http.StatusNoContent, nil)
@@ -178,7 +200,7 @@ func ListWithBindHandlerHttp(ctx context.Context, where []string, orderBy string
 }
 
 // List entities based on where
-func List(ctx context.Context, where []string, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any) (*Pageable, *gorm.DB, error) {
+func List(ctx context.Context, where []string, orderBy string, whereArgs []string, pageSize, page int, domain domain.BaseDomain, results any, join []interface{}) (*Pageable, *gorm.DB, error) {
 
 	if page <= 0 {
 		page = 1
@@ -199,7 +221,7 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 
 	logger.Debug(ctx, "list return case nil totalElements[%d]  pageSize[%d]", totalElements, pageSize64)
 
-	if totalElements == 0 {
+	if totalElements == 0 { // Ver se não vai dar algum tipo de bug aqui¹
 		return &Pageable{
 			Empty: true,
 		}, nil, errors.New("Nothing was found with the search term")
@@ -238,6 +260,12 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 
 	if orderBy != "" {
 		txDB.Order(orderBy)
+	}
+
+	if join != nil {
+		fmt.Println("Realizar o processamento do join")
+	} else {
+		fmt.Println("Não existem valores a ser usado o Join")
 	}
 
 	dbResult := txDB.Find(&results)
