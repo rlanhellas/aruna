@@ -220,11 +220,13 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 	txDB.Count(&totalElements)
 
 	logger.Debug(ctx, "list return case nil totalElements[%d]  pageSize[%d]", totalElements, pageSize64)
+	var emptyAny interface{} = make([]interface{}, 0)
 
 	if totalElements == 0 { // Ver se não vai dar algum tipo de bug aqui¹
 		return &Pageable{
-			Empty: true,
-		}, nil, errors.New("Nothing was found with the search term")
+			Content: emptyAny,
+			Empty:   true,
+		}, nil, errors.New("Nothing was found with the search term!")
 	}
 
 	pages := totalElements / pageSize64
@@ -236,7 +238,6 @@ func List(ctx context.Context, where []string, orderBy string, whereArgs []strin
 	if page == 1 {
 		isFirstPage = true
 	}
-
 	if int64(page) > pages {
 		return &Pageable{
 			Content:          results,
