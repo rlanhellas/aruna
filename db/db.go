@@ -36,6 +36,9 @@ func SetClient(c *gorm.DB) {
 // CreateWithBindHandlerHttp create entity and return the response to be used by HTTP handlers
 func CreateWithBindHandlerHttp(ctx context.Context, domain domain.BaseDomain) *httpbridge.HandlerHttpResponse {
 	result := Create(ctx, domain)
+	if result.Error != nil {
+		return resolveHandlerResponse(result.Error, http.StatusNotAcceptable, domain)
+	}
 	return resolveHandlerResponse(result.Error, http.StatusCreated, domain)
 }
 
@@ -295,6 +298,13 @@ func resolveHandlerResponse(err error, successStatus int, data any) *httpbridge.
 
 	if err != nil {
 		if successStatus >= 200 && successStatus < 300 {
+			return &httpbridge.HandlerHttpResponse{
+				Error:      err,
+				Data:       data,
+				StatusCode: successStatus,
+			}
+		}
+		if successStatus == 406 {
 			return &httpbridge.HandlerHttpResponse{
 				Error:      err,
 				Data:       data,
