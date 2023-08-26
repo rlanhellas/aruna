@@ -31,3 +31,12 @@ type HandlerHttpResponse struct {
 	Data       any
 	StatusCode int
 }
+
+// NewHandlerHttpResponse is new
+func NewHandlerHttpResponse(err error, statusCode int, data any) *HandlerHttpResponse {
+	return &HandlerHttpResponse{
+		Error:      err,
+		StatusCode: statusCode,
+		Data:       &data,
+	}
+}

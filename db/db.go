@@ -113,7 +113,7 @@ func EntityExist(ctx context.Context, domain domain.BaseDomain) (*gorm.DB, bool)
 
 // GetById get entity by id
 func GetById(ctx context.Context, domain domain.BaseDomain, preload []string) (*gorm.DB, any) {
-	logger.Debug(ctx, "getting entity[%s] %+v by id", domain.TableName(), domain)
+	//logger.Debug(ctx, "getting entity[%s] %+v by id", domain.TableName(), domain)
 	var result *gorm.DB
 	if preload != nil && len(preload) > 0 {
 		tx := client.Preload(preload[0])
