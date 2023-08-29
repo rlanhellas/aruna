@@ -2,7 +2,6 @@ package httpbridge
 
 import (
 	"context"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,4 +30,13 @@ type HandlerHttpResponse struct {
 	Error      error
 	Data       any
 	StatusCode int
+}
+
+// NewHandlerHttpResponse is new
+func NewHandlerHttpResponse(err error, statusCode int, data any) *HandlerHttpResponse {
+	return &HandlerHttpResponse{
+		Error:      err,
+		StatusCode: statusCode,
+		Data:       &data,
+	}
 }

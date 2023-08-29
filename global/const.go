@@ -19,6 +19,7 @@ const (
 	SecurityTokenUri     = "security.tokenuri"
 	SecurityJwkUri       = "security.jwkuri"
 	CorrelationID        = "correlationid"
+	RequestForm          = "requestForm"
 
 	PostgresDBType = "postgres"
 )
